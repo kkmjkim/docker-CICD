@@ -1,0 +1,28 @@
+language: generic
+
+sudo: required
+
+services:
+  - docker
+
+env:
+  - DOCKER_COMPOSE_VERSION=1.25.0 USER=pjbear REPO=cicd
+
+before_install:
+  - sudo rm /usr/local/bin/docker-compose
+  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+  - chmod +x docker-compose
+  - sudo mv docker-compose /usr/local/bin
+  - docker-compose up -d 
+
+script:
+  - wget -q -O - http://localhost:8080
+
+after_success:
+  #각 이미지 빌드 
+  - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+  - docker build -t $DOCKER_USERNAME/$REPO:${TRAVIS_COMMIT::7} -f web/Dockerfile-dev  web/
+  - docker push $DOCKER_USERNAME/$REPO:${TRAVIS_COMMIT::7}
+  #도커 허브 로그인
+  #아이디는 travis CI 홈페이지에 미리 넣어준다.
+  #빌드된 이미지들을 도커 허브에 push
